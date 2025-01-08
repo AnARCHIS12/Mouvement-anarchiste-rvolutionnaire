@@ -1,13 +1,15 @@
 'use client'
 
 import { createContext, useContext, useEffect, useState } from 'react'
-import { Session } from '@supabase/supabase-js'
+import { type Session, type AuthError, type AuthChangeEvent } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 
-const AuthContext = createContext<{
+interface AuthContextType {
   session: Session | null
   loading: boolean
-}>({
+}
+
+const AuthContext = createContext<AuthContextType>({
   session: null,
   loading: true,
 })
@@ -24,7 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
       setSession(session)
     })
 
@@ -38,19 +40,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   )
 }
 
-export const useAuth = () => {
+export function useAuth() {
   const context = useContext(AuthContext)
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider')
   }
-  return {
-    session: context.session,
-    loading: context.loading,
-    signIn: async (email: string, password: string) => {
-      return supabase.auth.signInWithPassword({ email, password })
-    },
-    signOut: async () => {
-      return supabase.auth.signOut()
-    }
-  }
+  return context
 }
